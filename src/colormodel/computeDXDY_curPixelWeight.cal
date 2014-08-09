@@ -1,0 +1,98 @@
+/*
+ * Copyright (c) 2014, Project: Rathlin, Heriot-Watt University, Edinburgh, UK
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * 
+ *   * Redistributions of source code must retain the above copyright notice,
+ *     this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *   * Neither the name of the Heriot-Watt University nor the names of its
+ *     contributors may be used to endorse or promote products derived from this
+ *     software without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
+ * WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+  
+ /*  Author: Deepayan Bhowmik <d.bhowmik@hw.ac.uk>
+  *  Author: Rob Stewart <r.stewart@hw.ac.uk>
+  *  Date:   10.08.2014
+  */
+ 				 
+
+package colormodel;
+import std.header.Parameter.*;
+
+actor computeDXDY_curPixelWeight() float weights, float kDerArray ==> float curPixelWeight, bool reset, int X, int Y:
+    uint count_x := 0;
+    uint count_y := 0;
+    
+    float kDerArrayBuffer[X_SIZE][Y_SIZE];	
+	getKDervArray: action kDerArray:[der_arrayVal] ==>
+	do
+		kDerArrayBuffer[count_x][count_y] := der_arrayVal;		
+		count_y := count_y + 1;
+		
+		if(count_y = Y_SIZE) then
+			count_x := count_x + 1;
+			count_y := 0;
+		end					
+	end
+    
+    doneArrayCount: action ==>
+    guard count_x = X_SIZE
+    do	
+    	count_y := 0;
+    	count_x := 0;    	    	
+    end
+    
+    
+	weight_calculation: action weights:[weight_val] ==> curPixelWeight:[curWeight_val], reset:[reset_val], X:[x], Y:[y]
+	var float curWeight_val, bool reset_val, uint x, uint y
+	do
+		curWeight_val := weight_val * kDerArrayBuffer[count_x][count_y];
+		
+		x := count_x;
+		y := count_y;
+		
+		/* Termination condition */
+		count_y := count_y + 1;		
+		if(count_y = Y_SIZE) then
+			count_x := count_x + 1;			
+			count_y := 0;
+		end
+				
+		if(count_x = X_SIZE) then
+			count_x := 0;
+			count_y := 0;		
+			reset_val := true;
+		else
+			reset_val := false;
+		end
+		
+	end
+	
+	schedule fsm s0 :	
+		s0 (getKDervArray) --> s0;
+		s0 (doneArrayCount) --> s1;
+   		s1 (weight_calculation) --> s1;   		 					
+	end
+	
+	priority		
+		doneArrayCount > getKDervArray;			
+	end
+				
+end

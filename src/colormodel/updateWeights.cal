@@ -1,0 +1,180 @@
+/*
+ * Copyright (c) 2014, Project: Rathlin, Heriot-Watt University, Edinburgh, UK
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * 
+ *   * Redistributions of source code must retain the above copyright notice,
+ *     this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *   * Neither the name of the Heriot-Watt University nor the names of its
+ *     contributors may be used to endorse or promote products derived from this
+ *     software without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
+ * WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+  
+ /*  Author: Deepayan Bhowmik <d.bhowmik@hw.ac.uk>
+  *  Author: Rob Stewart <r.stewart@hw.ac.uk>
+  *  Date:   10.08.2014
+  */
+ 				 
+
+package colormodel;
+import std.header.Parameter.*;
+
+actor updateWeights() float QuModel, float PuModel, uint bin ==> float weights:
+	float R[NUMBINS];	
+	int count := 0;
+	int count_x := 0;
+	int count_y := 0;
+	
+	float Pu_model_buffer[NUMBINS];
+	float Qu_model_buffer[NUMBINS];
+	
+	getColorModelQu: action QuModel:[value_Qu]==>	
+	do	
+		Qu_model_buffer[count] := value_Qu;
+				
+		count := count + 1;											  							
+	end		
+	
+	
+	getColorModelPu: action PuModel:[value_Pu]==>	
+	do	
+		Pu_model_buffer[count] := value_Pu;
+				
+		count := count + 1;											  							
+	end		
+			
+	doneCount_mModel: action ==>
+	guard count = NUMBINS
+    do	
+    	count := 0;
+    end
+    
+    uint bin_buffer[X_SIZE][Y_SIZE];
+    getBinValue: action bin:[value] ==>
+    do
+    	bin_buffer[count_x][count_y] := value;     	    	
+    			    
+    	count_y := count_y + 1;		
+		if(count_y = Y_SIZE) then
+			count_y := 0;
+			count_x := count_x + 1;
+		end													
+    end
+    
+    doneCount_bin: action ==>
+    guard count_x = X_SIZE
+    do
+    	count_x := 0;
+    	count_y := 0;    	        	
+    end
+          
+    float weight_buffer[X_SIZE][Y_SIZE];
+    update_weights: action ==>
+    do	    	    	   
+    	foreach int i in 0 .. (NUMBINS-1) do
+    		if(Pu_model_buffer[i] <= 0.00001) then
+    			R[i] := 0.0;
+    		else
+    			sqrt((Qu_model_buffer[i]/Pu_model_buffer[i]));
+    			R[i] := sqrtValue;
+    		end    		    	
+    	end
+    	    	 	    	
+    	    	    	 	
+    	foreach int x in 0 .. (X_SIZE-1) do
+    		foreach int y in 0 .. (Y_SIZE-1) do    		
+    			weight_buffer[x][y] := R[bin_buffer[x][y]];    				    			    			
+    		end
+    	end  
+    	  	   
+    	 	    	 	 
+    end
+               
+	/* Send output */			
+	send: action ==> weights:[ [ weight_buffer[x][y] : for int x in 0 .. (X_SIZE - 1), for int y in 0 .. (Y_SIZE - 1) ] ] repeat (X_SIZE*Y_SIZE)
+       
+	end
+	
+  /* ********************************************************
+   * Algorithm uses 'Bakhshali approximation' for square root calculation
+   * ********************************************************/
+     
+  procedure sqrt(float num)
+  var
+  	int pSq := 0, //This will be the nearest perfect square to s
+    int N := 0, //This is the sqrt of pSq
+    float op := num,
+    int i := 0,
+    int j := 0,
+    float d := 0,
+    float P := 0,
+    float A := 0       
+  begin
+  	while(op >= 0.0 ) do
+  	    i := i+1;
+  	 	op := op - 1;
+  	 end
+  	   	 
+     while(i>0) do
+     	while(j<=i) do
+			if(j*j = i) then
+				pSq := i;
+				N := j;
+				j := i; // Break condition
+			end	
+			j := j+1;     		
+     	end
+     	
+     	if(pSq > 0) then
+     		i := 1; // Break condition
+     	end
+     			
+        j := 0;
+		i := i-1;
+	 end
+     
+     d := num-pSq;
+     P := d/(2.0*N);
+     A := N+P;
+     sqrtValue := A-((P*P)/(2.0*A));      
+  end
+  float sqrtValue;
+
+	
+	schedule fsm s0 :	
+		s0 (getColorModelQu ) --> s0;
+   		s0 (doneCount_mModel ) --> s1;
+   		s1 (getColorModelPu ) --> s1;
+   		s1 (doneCount_mModel ) --> s2;
+   		s2 (getBinValue ) --> s2;
+   		s2 (doneCount_bin ) --> s3;	
+		s3 (update_weights ) --> s4;
+		s4 (send) --> s1;
+		//s4 (doneCountSend) --> s1;						
+	end
+	
+	priority		
+		doneCount_mModel > getColorModelQu;
+		doneCount_mModel > getColorModelPu;	
+		doneCount_bin > getBinValue;
+		//doneCountSend > send;			
+	end
+	
+end

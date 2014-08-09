@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<XDF name="Input">
+    <Port kind="Input" name="input">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="8"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Output" name="R">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="8"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Output" name="G">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="8"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Output" name="B">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="8"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Instance id="Stream_to_YUV">
+        <Class name="std.stdio.StreamToYUV"/>
+    </Instance>
+    <Instance id="YUV_to_RGB">
+        <Class name="std.stdio.YUVtoRGB"/>
+    </Instance>
+    <Connection dst="YUV_to_RGB" dst-port="Y" src="Stream_to_YUV" src-port="Y"/>
+    <Connection dst="YUV_to_RGB" dst-port="U" src="Stream_to_YUV" src-port="U"/>
+    <Connection dst="YUV_to_RGB" dst-port="V" src="Stream_to_YUV" src-port="V"/>
+    <Connection dst="" dst-port="R" src="YUV_to_RGB" src-port="R"/>
+    <Connection dst="" dst-port="G" src="YUV_to_RGB" src-port="G"/>
+    <Connection dst="" dst-port="B" src="YUV_to_RGB" src-port="B"/>
+    <Connection dst="Stream_to_YUV" dst-port="stream" src="" src-port="input"/>
+</XDF>

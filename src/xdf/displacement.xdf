@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<XDF name="displacement">
+    <Port kind="Input" name="weights">
+        <Type name="int">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="32"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Input" name="kDervArray">
+        <Type name="int">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="32"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Output" name="DX">
+        <Type name="int">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="32"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Output" name="DY">
+        <Type name="int">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="32"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Instance id="CurPixelWeight">
+        <Class name="colormodel.computeDXDY_curPixelWeight"/>
+    </Instance>
+    <Instance id="WeightSum">
+        <Class name="colormodel.weight_sum"/>
+    </Instance>
+    <Instance id="XSUM">
+        <Class name="colormodel.x_sum"/>
+    </Instance>
+    <Instance id="YSUM">
+        <Class name="colormodel.y_sum"/>
+    </Instance>
+    <Instance id="Cal_DX">
+        <Class name="colormodel.dx"/>
+    </Instance>
+    <Instance id="Cal_DY">
+        <Class name="colormodel.dy"/>
+    </Instance>
+    <Connection dst="CurPixelWeight" dst-port="weights" src="" src-port="weights"/>
+    <Connection dst="CurPixelWeight" dst-port="kDerArray" src="" src-port="kDervArray"/>
+    <Connection dst="WeightSum" dst-port="curPixelWeight"
+        src="CurPixelWeight" src-port="curPixelWeight"/>
+    <Connection dst="WeightSum" dst-port="reset" src="CurPixelWeight" src-port="reset"/>
+    <Connection dst="XSUM" dst-port="curPixelWeight"
+        src="CurPixelWeight" src-port="curPixelWeight"/>
+    <Connection dst="YSUM" dst-port="curPixelWeight"
+        src="CurPixelWeight" src-port="curPixelWeight"/>
+    <Connection dst="XSUM" dst-port="reset" src="CurPixelWeight" src-port="reset"/>
+    <Connection dst="YSUM" dst-port="reset" src="CurPixelWeight" src-port="reset"/>
+    <Connection dst="YSUM" dst-port="Y" src="CurPixelWeight" src-port="Y"/>
+    <Connection dst="XSUM" dst-port="X" src="CurPixelWeight" src-port="X"/>
+    <Connection dst="Cal_DX" dst-port="weightSum" src="WeightSum" src-port="weightSum"/>
+    <Connection dst="Cal_DY" dst-port="weightSum" src="WeightSum" src-port="weightSum"/>
+    <Connection dst="Cal_DX" dst-port="xSum" src="XSUM" src-port="xSum"/>
+    <Connection dst="Cal_DY" dst-port="ySum" src="YSUM" src-port="ySum"/>
+    <Connection dst="" dst-port="DX" src="Cal_DX" src-port="DX"/>
+    <Connection dst="" dst-port="DY" src="Cal_DY" src-port="DY"/>
+</XDF>

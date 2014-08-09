@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<XDF name="Output">
+    <Port kind="Input" name="R">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="8"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Input" name="G">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="8"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Input" name="B">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="8"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Input" name="X">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="16"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Input" name="Y">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="16"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Output" name="output">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="8"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Instance id="Draw_rectangle">
+        <Class name="std.util.drawRectangle"/>
+    </Instance>
+    <Connection dst="Draw_rectangle" dst-port="Rin" src="" src-port="R"/>
+    <Connection dst="Draw_rectangle" dst-port="Gin" src="" src-port="G"/>
+    <Connection dst="Draw_rectangle" dst-port="Bin" src="" src-port="B"/>
+    <Connection dst="Draw_rectangle" dst-port="center_x" src="" src-port="X"/>
+    <Connection dst="Draw_rectangle" dst-port="center_y" src="" src-port="Y"/>
+    <Connection dst="" dst-port="output" src="Draw_rectangle" src-port="YUV"/>
+</XDF>

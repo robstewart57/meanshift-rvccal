@@ -1,0 +1,137 @@
+/*
+ * Copyright (c) 2014, Project: Rathlin, Heriot-Watt University, Edinburgh, UK
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * 
+ *   * Redistributions of source code must retain the above copyright notice,
+ *     this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *   * Neither the name of the Heriot-Watt University nor the names of its
+ *     contributors may be used to endorse or promote products derived from this
+ *     software without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
+ * WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+  
+ /*  Author: Deepayan Bhowmik <d.bhowmik@hw.ac.uk>
+  *  Author: Rob Stewart <r.stewart@hw.ac.uk>
+  *  Date:   10.08.2014
+  */
+ 				 
+
+package main;
+
+import std.header.Parameter.*;
+
+actor kernel_derivation() ==> float kDervO:
+	
+	float kArray[X_SIZE][Y_SIZE];
+		
+	/*
+	 * Kernel derivation actor
+	 */
+	kernelDerivation: action ==> 
+	var 
+		float euclideanDistance,
+		float tmpX,
+   	 	float tmpY,
+   	 	float tmp 	
+	do
+		foreach int x in -HALF_X .. HALF_X do
+			foreach int y in -HALF_Y .. HALF_Y do
+				tmpX := (x*1.0)/HALF_X;
+     			tmpY := (y*1.0)/HALF_Y;
+     			tmp  := tmpX*tmpX + tmpY*tmpY;    
+   	 			sqrt(tmp); 
+   	 			euclideanDistance := sqrtValue; 
+				
+				if(euclideanDistance > 1.000001) then
+					kArray[x+HALF_X][y+HALF_Y] := 0.0;
+				else
+					kArray[x+HALF_X][y+HALF_Y] := 1.0;
+				end																				
+			end
+		end 
+	end 
+	
+	/*
+	 * Send data to next actor 
+	 */
+	 
+	sendData: action ==> kDervO:[ [ kArray[x][y] : for int x in 0 .. (X_SIZE - 1), for int y in 0 .. (Y_SIZE - 1) ] ] repeat (X_SIZE*Y_SIZE)
+       
+	end
+	 	 	
+	block: action ==>
+		guard false
+	end
+	
+	
+	
+  /* ********************************************************
+   * Algorithm uses 'Bakhshali approximation' for square root calculation
+   * ********************************************************/
+     
+  procedure sqrt(float num)
+  var
+  	int pSq := 0, //This will be the nearest perfect square to s
+    int N := 0, //This is the sqrt of pSq
+    float op := num,
+    int i := 0,
+    int j := 0,
+    float d := 0,
+    float P := 0,
+    float A := 0       
+  begin
+  	while(op >= 0.0 ) do
+  	    i := i+1;
+  	 	op := op - 1;
+  	 end
+  	   	 
+     while(i>0) do
+     	while(j<=i) do
+			if(j*j = i) then
+				pSq := i;
+				N := j;
+				j := i; // Break condition
+			end	
+			j := j+1;     		
+     	end
+     	
+     	if(pSq > 0) then
+     		i := 1; // Break condition
+     	end
+     			
+        j := 0;
+		i := i-1;
+	 end
+     
+     d := num-pSq;
+     P := d/(2.0*N);
+     A := N+P;
+     sqrtValue := A-((P*P)/(2.0*A));      
+  end
+  float sqrtValue;
+	
+  schedule fsm s0 :
+		s0 (kernelDerivation  ) --> s1;	
+		s1 (sendData   ) --> s2;
+		s2 (block) --> s2;
+  end		
+    
+end
+

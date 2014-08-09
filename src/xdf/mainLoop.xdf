@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<XDF name="mainLoop">
+    <Port kind="Input" name="R">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="8"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Input" name="G">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="8"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Input" name="B">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="8"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Output" name="X">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="16"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Output" name="Y">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="16"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Instance id="kArray_evaluation">
+        <Class name="main.kernel_evaluation"/>
+    </Instance>
+    <Instance id="update_model">
+        <Class name="colormodel.updateColormodel"/>
+    </Instance>
+    <Instance id="update_weight">
+        <Class name="colormodel.updateWeights"/>
+    </Instance>
+    <Instance id="displacement">
+        <Class name="xdf.displacement"/>
+    </Instance>
+    <Instance id="kArray_derv">
+        <Class name="main.kernel_derivation"/>
+    </Instance>
+    <Instance id="Centre_XY">
+        <Class name="main.updateCentreXY"/>
+    </Instance>
+    <Instance id="Final_Centre_XY">
+        <Class name="main.finalCentreXY"/>
+    </Instance>
+    <Connection dst="update_weight" dst-port="bin" src="update_model" src-port="bin_o"/>
+    <Connection dst="displacement" dst-port="weights"
+        src="update_weight" src-port="weights"/>
+    <Connection dst="update_model" dst-port="R" src="" src-port="R"/>
+    <Connection dst="update_model" dst-port="G" src="" src-port="G"/>
+    <Connection dst="update_model" dst-port="B" src="" src-port="B"/>
+    <Connection dst="update_model" dst-port="centre_x_i" src="Centre_XY" src-port="centre_x_out"/>
+    <Connection dst="update_model" dst-port="centre_y_i" src="Centre_XY" src-port="centre_y_out"/>
+    <Connection dst="update_model" dst-port="loop_status"
+        src="Centre_XY" src-port="loop_status"/>
+    <Connection dst="Final_Centre_XY" dst-port="X_in" src="Centre_XY" src-port="centre_x_out"/>
+    <Connection dst="Final_Centre_XY" dst-port="Y_in" src="Centre_XY" src-port="centre_y_out"/>
+    <Connection dst="Final_Centre_XY" dst-port="loop_stat"
+        src="Centre_XY" src-port="loop_status"/>
+    <Connection dst="" dst-port="X" src="Final_Centre_XY" src-port="X_out"/>
+    <Connection dst="" dst-port="Y" src="Final_Centre_XY" src-port="Y_out"/>
+    <Connection dst="update_model" dst-port="kArray"
+        src="kArray_evaluation" src-port="kArrayO"/>
+    <Connection dst="update_weight" dst-port="QuModel"
+        src="update_model" src-port="Qu"/>
+    <Connection dst="update_weight" dst-port="PuModel"
+        src="update_model" src-port="Pu"/>
+    <Connection dst="displacement" dst-port="kDervArray"
+        src="kArray_derv" src-port="kDervO"/>
+    <Connection dst="Centre_XY" dst-port="dx_i" src="displacement" src-port="DX"/>
+    <Connection dst="Centre_XY" dst-port="dy_i" src="displacement" src-port="DY"/>
+</XDF>

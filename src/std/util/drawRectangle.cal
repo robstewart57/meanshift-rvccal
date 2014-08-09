@@ -1,0 +1,243 @@
+/*
+ * Copyright (c) 2014, Project: Rathlin, Heriot-Watt University, Edinburgh, UK
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * 
+ *   * Redistributions of source code must retain the above copyright notice,
+ *     this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *   * Neither the name of the Heriot-Watt University nor the names of its
+ *     contributors may be used to endorse or promote products derived from this
+ *     software without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
+ * WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+  
+ /*  Author: Deepayan Bhowmik <d.bhowmik@hw.ac.uk>
+  *  Author: Rob Stewart <r.stewart@hw.ac.uk>
+  *  Date:   10.08.2014
+  */
+  
+package std.util;
+import std.header.Parameter.*;
+import std.header.Source.*;
+
+actor drawRectangle() uint(size=8) Rin, uint(size=8) Gin, uint(size=8) Bin, uint(size=16) center_x, uint(size=16) center_y ==> 
+				uint(size=8) YUV:
+	
+	uint(size=16) centre_x;
+	uint(size=16) centre_y;
+		
+	/*Get center xy*/
+	getCenterXY: action center_x:[X], center_y:[Y]==>
+	do
+		centre_x := X;
+		centre_y := Y;
+	end
+	
+	/* Get RGB value in the buffer */
+	int count_x := 0;
+	int count_y := 0;
+		
+	uint(size=8)  bufferR[IM_HEIGHT][IM_WIDTH];
+	uint(size=8)  bufferG[IM_HEIGHT][IM_WIDTH];
+	uint(size=8)  bufferB[IM_HEIGHT][IM_WIDTH];	
+	getValueRGB: action Rin:[BytesR], Gin:[BytesG], Bin:[BytesB] ==>	
+	do
+		bufferR[count_x][count_y] := BytesR;
+		bufferG[count_x][count_y] := BytesG;
+		bufferB[count_x][count_y] := BytesB;
+		
+		count_y := count_y + 1;
+				
+		if(count_y = IM_WIDTH) then
+			count_y := 0;
+			count_x := count_x + 1;
+		end		
+	end
+	
+    doneCountIm: action ==> 
+	guard count_x = IM_HEIGHT
+	do
+		count_x := 0;		
+	end			
+		
+	drawRectangle: action ==>
+	var int x1,
+		int y1,
+		int x2,
+		int y2	
+	do
+		
+		x1 := centre_x - HALF_X;
+		y1 := centre_y - HALF_Y;
+        x2 := centre_x + HALF_X;
+        y2 := centre_y + HALF_Y;
+                      
+        foreach int x in x1 .. x2 do
+        	bufferR[y1][x] := 255;
+        	bufferG[y1][x] := 0;
+        	bufferB[y1][x] := 0;
+        	
+        	bufferR[y2][x] := 255;
+        	bufferG[y2][x] := 0;
+        	bufferB[y2][x] := 0;	
+        end
+        
+        foreach int y in y1 .. y2 do
+        	bufferR[y][x1] := 255;
+        	bufferG[y][x1] := 0;
+        	bufferB[y][x1] := 0;
+        	
+        	bufferR[y][x2] := 255;
+        	bufferG[y][x2] := 0;
+        	bufferB[y][x2] := 0;	
+        end       
+	end
+	
+	uint(size=8)  bufferY[IM_HEIGHT][IM_WIDTH];
+	uint(size=8)  bufferU[IM_HEIGHT][IM_WIDTH];
+	uint(size=8)  bufferV[IM_HEIGHT][IM_WIDTH];
+	int yt;
+	int ut;
+	int vt;
+	rgbToYuv: action ==>
+	var 
+		uint(size=8) y, uint(size=8) u, uint(size=8) v, uint(size=8) r, uint(size=8) g, uint(size=8) b
+	do		
+		foreach int yd in 0 .. IM_HEIGHT-1 do
+    		foreach int xd in 0 .. IM_WIDTH-1 do
+    			r := bufferR[yd][xd];
+    			g := bufferG[yd][xd];
+    			b := bufferB[yd][xd];
+    			
+    			yt := ( (  66 * r + 129 * g +  25 * b + 128) >> 8) +  16;
+				ut := ( ( -38 * r -  74 * g + 112 * b + 128) >> 8) + 128;
+				vt := ( ( 112 * r -  94 * g -  18 * b + 128) >> 8) + 128;
+		
+			
+				if (yt > 0) then
+					if (yt < 255) then
+						y := yt;
+					else
+						y := 255;
+					end
+				else
+				y := 0;
+				end
+		
+				if (ut > 0) then
+					if (ut < 255) then
+						u := ut;
+					else
+						u := 255;
+					end
+				else
+					u := 0;
+				end
+		
+				if (vt > 0) then
+					if (vt < 255) then
+						v := vt;
+					else
+						v := 255;
+					end
+				else
+					v := 0;
+				end
+				
+				bufferY[yd][xd] := y;
+				bufferU[yd][xd] := u;
+				bufferV[yd][xd] := v;
+				
+    		end
+    	end								
+	end
+	
+	uint(size=8)  pictureBufferYUV[IM_WIDTH * IM_HEIGHT * 3];
+	
+	int count := 0;
+	getPixValueY: action  ==>
+	do		
+		count := 0;		
+		foreach int yd in 0 .. IM_HEIGHT-1 do
+    		foreach int xd in 0 .. IM_WIDTH-1 do
+    			pictureBufferYUV[count] := bufferY[yd][xd];
+    			count := count+ 1;    			    			
+    		end
+		end				
+	end
+	
+	int cbCount := 0;
+    getPixValueU: action  ==>
+	do
+		count := 0;
+		foreach int yd in 0 .. IM_HEIGHT-1 do
+    		foreach int xd in 0 .. IM_WIDTH-1 do
+    			cbCount := IM_HEIGHT * IM_WIDTH + count;
+    			pictureBufferYUV[cbCount] := bufferU[yd][xd];
+    			count := count+ 1;
+    		end    		
+		end				
+	end
+	
+	int crCount := 0;
+    getPixValueV: action  ==>
+	do		
+		count := 0;
+		foreach int yd in 0 .. IM_HEIGHT-1 do
+    		foreach int xd in 0 .. IM_WIDTH-1 do
+    			crCount := IM_HEIGHT * IM_WIDTH * 2 + count;
+    			pictureBufferYUV[crCount] := bufferV[yd][xd];
+    			count := count+ 1;
+    		end
+		end			
+	end
+		
+	int count_frame := 0;
+	doneCountYUV: action ==>
+	do	    		
+		count_frame := count_frame + 1;
+		println("Frame number : " + count_frame);
+		
+		if(count_frame = 130) then
+			source_exit(0);
+		end		
+	end
+	
+	sendYUV: action ==> YUV:[ [ pictureBufferYUV[i] : for int i in 0 .. ((IM_WIDTH*IM_HEIGHT*3) - 1) ] ] repeat (IM_WIDTH*IM_HEIGHT*3)
+	end
+
+	schedule fsm s0 :			
+		s0 (getValueRGB) --> s0;
+		s0 (doneCountIm ) --> s1;
+		s1 (getCenterXY) --> s2;	
+		s2 (drawRectangle) --> s3;
+		s3 (rgbToYuv) --> s4;
+		s4 (getPixValueY) --> s5;
+		s5 (getPixValueU) --> s6;
+		s6 (getPixValueV) --> s7;
+		s7 (sendYUV) --> s8;
+		s8 (doneCountYUV) --> s0;		
+	end
+	
+	priority
+		doneCountIm > getValueRGB;		
+	end
+	
+	
+end 				 		 

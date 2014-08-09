@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<XDF name="MeanShiftMain">
+    <Port kind="Input" name="input_port">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="8"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Port kind="Output" name="output_port">
+        <Type name="uint">
+            <Entry kind="Expr" name="size">
+                <Expr kind="Literal" literal-kind="Integer" value="8"/>
+            </Entry>
+        </Type>
+    </Port>
+    <Instance id="main_loop_cal">
+        <Class name="xdf.mainLoop"/>
+    </Instance>
+    <Instance id="input_read">
+        <Class name="xdf.Input"/>
+    </Instance>
+    <Instance id="output_write">
+        <Class name="xdf.Output"/>
+    </Instance>
+    <Connection dst="input_read" dst-port="input" src="" src-port="input_port"/>
+    <Connection dst="main_loop_cal" dst-port="R" src="input_read" src-port="R"/>
+    <Connection dst="main_loop_cal" dst-port="G" src="input_read" src-port="G"/>
+    <Connection dst="main_loop_cal" dst-port="B" src="input_read" src-port="B"/>
+    <Connection dst="output_write" dst-port="X" src="main_loop_cal" src-port="X"/>
+    <Connection dst="output_write" dst-port="Y" src="main_loop_cal" src-port="Y"/>
+    <Connection dst="output_write" dst-port="R" src="input_read" src-port="R"/>
+    <Connection dst="output_write" dst-port="G" src="input_read" src-port="G"/>
+    <Connection dst="output_write" dst-port="B" src="input_read" src-port="B"/>
+    <Connection dst="" dst-port="output_port" src="output_write" src-port="output"/>
+</XDF>

@@ -1,0 +1,245 @@
+/*
+ * Copyright (c) 2014, Project: Rathlin, Heriot-Watt University, Edinburgh, UK
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * 
+ *   * Redistributions of source code must retain the above copyright notice,
+ *     this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *   * Neither the name of the Heriot-Watt University nor the names of its
+ *     contributors may be used to endorse or promote products derived from this
+ *     software without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
+ * WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+  
+ /*  Author: Deepayan Bhowmik <d.bhowmik@hw.ac.uk>
+  *  Author: Rob Stewart <r.stewart@hw.ac.uk>
+  *  Date:   10.08.2014
+  */
+ 				 
+
+package colormodel;
+import std.header.Parameter.*;
+
+actor updateColormodel() uint(size=8) R, uint(size=8) G, uint(size=8) B, 
+					uint centre_x_i, uint centre_y_i, float kArray, bool loop_status 
+					==> float Qu, float Pu, uint bin_o:
+
+    /* Variable declaration */	
+	int count_x := 0;
+	int count_y := 0;
+		
+	/* Get RGB value in the buffer */
+	uint(size=8)  bufferR[IM_HEIGHT][IM_WIDTH];
+	uint(size=8)  bufferG[IM_HEIGHT][IM_WIDTH];
+	uint(size=8)  bufferB[IM_HEIGHT][IM_WIDTH];
+		
+	getValueRGB: action R:[BytesR], G:[BytesG], B:[BytesB] ==>	
+	do
+		//println(count_x + " " + count_y);	
+		bufferR[count_x][count_y] := BytesR;
+		bufferG[count_x][count_y] := BytesG;
+		bufferB[count_x][count_y] := BytesB;
+		
+		count_y := count_y + 1;		
+		
+		if(count_y = IM_WIDTH) then
+			count_y := 0;
+			count_x := count_x + 1;
+		end							
+	end
+		
+    doneCountIm: action ==> 
+	guard count_x = IM_HEIGHT
+	do
+		count_x := 0;		
+		count_y := 0;
+	end			
+	
+	/* Get the kernel values */
+	float kArrayBuffer[X_SIZE][Y_SIZE];
+	getkArray: action kArray:[arrayVal] ==>
+	do
+		kArrayBuffer[count_x][count_y] := arrayVal;
+		count_y := count_y + 1;
+		
+		if(count_y = Y_SIZE) then
+			count_y := 0;
+			count_x := count_x + 1;
+		end						
+	end
+	
+    doneArrayCount: action ==>
+    guard count_x = X_SIZE
+    do	    	
+    	count_x := 0;
+    	count_y := 0;
+    end
+    
+    
+    /* Get center XY value of the rectangle and loop status */
+    int centre_x := 0;
+    int centre_y := 0;
+    bool while_loop_status;
+    
+    initialise: action ==>
+	do
+		centre_x := CENTRE_X;
+		centre_y := CENTRE_Y;		
+		while_loop_status := false;						
+	end
+    
+    getCentreXY_loop: action centre_x_i:[val_x], centre_y_i:[val_y], loop_status:[val_loop] ==>
+    do
+    	centre_x := val_x;
+    	centre_y := val_y;    	    	
+    	while_loop_status := val_loop;    	     	  	  	    	    	    
+    end
+    
+        
+    isLoopTrue: action ==>
+    //guard while_loop_status = true
+    do
+    	if(while_loop_status = true) then
+    		while_loop_status := false;
+    		count_x := IM_HEIGHT;
+    	end
+    end
+    
+	/*
+	 * Kernel derivation actor
+	 */
+	uint bin[X_SIZE][Y_SIZE]; 
+	float m_model[NUMBINS];
+	
+	updateModel: action ==> 
+	var 
+		int iX,
+		int iY,
+		float total
+	do		
+		/* Clear model and bin values */
+		foreach int i in 0 .. (NUMBINS-1) do      	      	
+            m_model[i] := 0; 
+      	end
+		
+		foreach int x in -HALF_X .. HALF_X do
+			foreach int y in -HALF_Y .. HALF_Y do				                                                              
+                bin[x+HALF_X][y+HALF_Y] := 0;                                                                              											
+			end
+		end
+		/*----------------------------- */	
+		 			
+		foreach int x in -HALF_X .. HALF_X do
+			foreach int y in -HALF_Y .. HALF_Y do
+				iX := centre_x + x;
+                iY := centre_y + y;
+                                                
+                /* Find the bin */
+                findBin(bufferR[iY][iX], bufferG[iY][iX], bufferB[iY][iX]);                
+                bin[x+HALF_X][y+HALF_Y] := binValue;
+                                
+                /* Model values */
+                m_model[bin[x+HALF_X][y+HALF_Y]] := m_model[bin[x+HALF_X][y+HALF_Y]] + kArrayBuffer[x+HALF_X][y+HALF_Y];                                                              											
+			end
+		end 
+		
+		//The model values must by normalized.
+      	total := 0;
+      	foreach int i in 0 .. NUMBINS do      	      	
+            total := total + m_model[i];
+      	end
+      	
+      	foreach int i in 0 .. NUMBINS do      	      	
+            m_model[i] := m_model[i] / total; 
+      	end    
+      		      			
+	end 
+	
+	/* Send output */
+	//int count := 0;
+	
+	send_Qu: action ==> Qu:[ [ m_model[i] : for int i in 0 .. (NUMBINS - 1) ] ] repeat (NUMBINS)
+	end
+	
+	send_Pu: action ==> Pu:[ [ m_model[i] : for int i in 0 .. (NUMBINS - 1) ] ] repeat (NUMBINS)
+	end
+	
+        
+    send_bin: action ==> bin_o:[ [ bin[x][y] : for int x in 0 .. (X_SIZE - 1), for int y in 0 .. (Y_SIZE - 1) ] ] repeat (X_SIZE*Y_SIZE)
+       
+	end
+        
+	
+  /* ********************************************************
+   * Function: Find bin value
+   * ********************************************************/
+   procedure findBin(uint(size=8) R, uint(size=8) G, uint(size=8) B)
+   var
+   	 uint r,
+   	 uint g,
+   	 uint b   	 
+   begin	
+   // scale the colors
+     r := R/BINSIZE;
+     g := G/BINSIZE;
+     b := B/BINSIZE;
+     		
+     binValue := r + BPC*g + BPC*BPC*b;   	    	 	
+   end    
+   uint binValue;	
+   
+   
+   schedule fsm init:	
+   		init (initialise ) --> s1;
+   		s1 (getValueRGB) --> s1;
+		s1 (doneCountIm ) --> s2;
+		
+		s2 (getkArray) --> s2;
+		s2 (doneArrayCount) --> s3;
+		
+		s3 (updateModel) --> s5;
+		
+		s5 (send_Qu ) --> s7;
+		
+	//-- Finish initial Qu collection and send it --//
+		
+		s6 (getCentreXY_loop ) --> s7;
+   		s7 (isLoopTrue) --> s8;
+   		 	
+		s8 (getValueRGB) --> s8;
+		s8 (doneCountIm ) --> s9;
+		
+		s9 (getkArray) --> s9;
+		s9 (doneArrayCount) --> s10;
+		
+		s10 (updateModel) --> s11;
+		
+		s11 (send_Pu ) --> s12;
+				
+		s12 (send_bin ) --> s6;
+					
+	end
+   
+   	
+	priority		
+		doneCountIm > getValueRGB;
+		doneArrayCount > getkArray;				
+	end
+	
+end

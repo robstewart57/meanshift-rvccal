@@ -1,0 +1,94 @@
+/*
+ * Copyright (c) 2014, Project: Rathlin, Heriot-Watt University, Edinburgh, UK
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * 
+ *   * Redistributions of source code must retain the above copyright notice,
+ *     this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *   * Neither the name of the Heriot-Watt University nor the names of its
+ *     contributors may be used to endorse or promote products derived from this
+ *     software without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
+ * WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+  
+ /*  Author: Deepayan Bhowmik <d.bhowmik@hw.ac.uk>
+  *  Author: Rob Stewart <r.stewart@hw.ac.uk>
+  *  Date:   10.08.2014
+  */
+
+package std.stdio;
+
+actor YUVtoRGB() uint(size=8) Y, uint(size=8) U, uint(size=8) V ==>
+		uint(size=8) R, uint(size=8) G, uint(size=8) B:
+	
+	uint(size=8) r := 0;
+    uint(size=8) g := 0;
+    uint(size=8) b := 0;
+    int(size=16) rt := 0;
+    int(size=16) gt := 0;
+    int(size=16) bt := 0;
+    
+    int(size=16) C := 0;
+    int(size=16) D := 0;
+    int(size=16) E := 0;
+    
+    action Y:[y], U:[u], V:[v] ==> R:[r], G:[g], B:[b]
+	do		
+		C := y - 16;
+		D := u - 128;
+		E := v - 128;
+		
+		rt := ( 298 * C           + 409 * E + 128) >> 8;
+		gt := ( 298 * C - 100 * D - 208 * E + 128) >> 8;
+		bt := ( 298 * C + 516 * D           + 128) >> 8;
+		
+					    				
+		if (rt > 0) then
+			if (rt < 255) then
+				r := rt;
+			else
+				r := 255;
+			end
+		else
+			r := 0;
+		end
+		if (gt > 0) then
+			if (gt < 255) then
+				g := gt;
+			else
+				g := 255;
+			end
+		else
+			g := 0;
+		end
+		if (bt > 0) then
+			if (bt < 255) then
+				b := bt;
+			else
+				b := 255;
+			end
+		else
+			b := 0;
+		end
+		
+		//println("R: " + rt + " G: " + gt + " B: " +bt); 
+		
+	end
+end
+

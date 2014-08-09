@@ -1,0 +1,96 @@
+/*
+ * Copyright (c) 2014, Project: Rathlin, Heriot-Watt University, Edinburgh, UK
+ * All rights reserved.
+ * 
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ * 
+ *   * Redistributions of source code must retain the above copyright notice,
+ *     this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *   * Neither the name of the Heriot-Watt University nor the names of its
+ *     contributors may be used to endorse or promote products derived from this
+ *     software without specific prior written permission.
+ * 
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+ * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY
+ * WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+  
+ /*  Author: Deepayan Bhowmik <d.bhowmik@hw.ac.uk>
+  *  Author: Rob Stewart <r.stewart@hw.ac.uk>
+  *  Date:   10.08.2014
+  */
+ 				 
+
+package main;
+import std.header.Parameter.*;
+
+actor updateCentreXY() int dx_i, int dy_i ==> uint centre_x_out, uint centre_y_out, bool loop_status:
+	uint centre_x ;
+	uint centre_y ;	
+	int dx;
+	int dy;	
+	int loopcount := 0;
+	
+	initialise: action ==>
+	do
+		centre_x := CENTRE_X;
+		centre_y := CENTRE_Y;
+		
+		loopcount := 0;
+	end
+			
+	
+	get_dx_dy: action dx_i:[val_x], dy_i:[val_y] ==>
+	do
+		dx := val_x;
+		dy := val_y;				
+	end
+	
+	
+	bool while_loop_status := false;
+	updateCentreXY: action ==>
+	do
+		centre_x := centre_x + dx;
+		centre_y := centre_y + dy;
+		
+		loopcount := loopcount + 1;
+						
+		if(((dx=0) && (dy=0)) || (loopcount>20) ) then
+			while_loop_status := false;
+		else	
+			while_loop_status := true;
+		end
+				
+	end
+	
+	
+	send: action ==> centre_x_out:[val_x], centre_y_out:[val_y], loop_status:[val_loop]
+	var
+		uint val_x,
+		uint val_y,
+		bool val_loop
+	do	
+		val_x := centre_x;
+		val_y := centre_y;
+		val_loop := while_loop_status;											
+	end	
+	
+	schedule fsm s0 :	
+   		s0 (initialise ) --> s1;
+   		s1 (get_dx_dy ) --> s2;
+   		s2 (updateCentreXY ) --> s3;
+   		s3 (send ) --> s1;    		 				
+	end
+end
