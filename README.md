@@ -16,8 +16,7 @@ a red tracking window.
 2. Import this eclipse project and compile the `TopMeanShift.xdf`
    network using the Orcc C backend.
 
-3. Download the S2.L1 sequence PETS'09 data set [video](https://www.
-dropbox.com/sh/cy50jgbtv26cc1w/AAA1g_Pt0pVV5smWOnBmJAmFa/PETS_176x144.yuv),
+3. Download the S2.L1 sequence PETS'09 data set [video](https://www.dropbox.com/sh/cy50jgbtv26cc1w/AAA1g_Pt0pVV5smWOnBmJAmFa/PETS_176x144.yuv),
    copyright of the University of Reading.
 
 4. Go to the C output directory and compile.
